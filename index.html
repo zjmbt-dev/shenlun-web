@@ -104,7 +104,7 @@
                             </div>
                         </div>
                         <h3 style="margin-top:20px;">真题示例</h3>
-                        <textarea id="xiaoti-question" placeholder="请输入申论小题题目内容，或从上方真题库加载..."></textarea>
+                        <textarea id="xiaoti-question" placeholder="请从上方选择真题加载，或手动输入题目..."></textarea>
                         <div class="controls">
                             <select id="xiaoti-type">
                                 <option value="">选择题型</option>
@@ -112,7 +112,7 @@
                                 <option value="综合分析题">综合分析题</option>
                                 <option value="公文写作题">公文写作题</option>
                             </select>
-                            <button onclick="analyzeXiaoti()">分析题目</button>
+                            <button onclick="analyzeXiaoti()">解题指导</button>
                         </div>
                     </div>
                     <div class="answer-section">
@@ -164,8 +164,8 @@
                                 </div>
                             </div>
                         </div>
-                        <h3 style="margin-top:20px;">选择题目</h3>
-                        <textarea id="dazuowen-question" placeholder="请输入大作文题目，或从上方真题库加载..."></textarea>
+                        <h3 style="margin-top:20px;">真题示例</h3>
+                        <textarea id="dazuowen-question" placeholder="请从上方选择真题加载，或手动输入题目..."></textarea>
                         <div class="controls">
                             <select id="dazuowen-type">
                                 <option value="">选择主题类型</option>
@@ -174,11 +174,11 @@
                                 <option value="双主题ABC型">双主题ABC型</option>
                                 <option value="多主题">多主题</option>
                             </select>
-                            <button onclick="analyzeDazuowen()">分析题目</button>
+                            <button onclick="analyzeDazuowen()">解题指导</button>
                         </div>
                     </div>
                     <div class="answer-section">
-                        <h3>输入你的作文</h3>
+                        <h3>输入你的作答</h3>
                         <textarea id="dazuowen-answer" placeholder="请输入你的作文内容..."></textarea>
                         <button onclick="evaluateDazuowen()">提交批改</button>
                     </div>
