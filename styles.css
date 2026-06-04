@@ -396,6 +396,11 @@ footer p {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
+.btn-sm {
+    padding: 8px 14px;
+    font-size: 0.85rem;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
     header h1 {

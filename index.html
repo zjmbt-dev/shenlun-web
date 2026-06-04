@@ -66,12 +66,21 @@
                             <div class="exam-source-row">
                                 <div class="form-group">
                                     <label>考试类型</label>
-                                    <select id="xt-exam-category" onchange="xtUpdateYear()">
+                                    <select id="xt-exam-category" onchange="xtOnCategoryChange()">
                                         <option value="">请选择</option>
                                         <option value="国考">国考</option>
                                         <option value="浙江">浙江省考</option>
                                         <option value="江西">江西省考</option>
                                         <option value="广东">广东省考</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="xt-guokao-pt-group" style="display:none;">
+                                    <label>卷型</label>
+                                    <select id="xt-guokao-pt" onchange="xtUpdateYear()">
+                                        <option value="">请选择</option>
+                                        <option value="副省级">副省级</option>
+                                        <option value="地市级">地市级</option>
+                                        <option value="行政执法">行政执法</option>
                                     </select>
                                 </div>
                                 <div class="form-group" id="xt-year-group" style="display:none;">
@@ -89,17 +98,15 @@
                                         <option value="公文写作题">公文写作题</option>
                                     </select>
                                 </div>
-                            </div>
-                            <div class="exam-source-row" id="xt-question-group" style="display:none;">
-                                <div class="form-group" style="flex:2;">
-                                    <label>选择题目</label>
+                                <div class="form-group" id="xt-q-group" style="display:none;">
+                                    <label>题目</label>
                                     <select id="xt-question-select">
                                         <option value="">请选择</option>
                                     </select>
                                 </div>
-                                <div class="form-group" style="flex:0;">
+                                <div class="form-group" id="xt-confirm-group" style="display:none;">
                                     <label>&nbsp;</label>
-                                    <button onclick="xtLoadQuestion()" class="btn-load">确认</button>
+                                    <button onclick="xtLoadQuestion()" class="btn-load btn-sm">确认</button>
                                 </div>
                             </div>
                         </div>
@@ -130,12 +137,21 @@
                             <div class="exam-source-row">
                                 <div class="form-group">
                                     <label>考试类型</label>
-                                    <select id="dz-exam-category" onchange="dzUpdateYear()">
+                                    <select id="dz-exam-category" onchange="dzOnCategoryChange()">
                                         <option value="">请选择</option>
                                         <option value="国考">国考</option>
                                         <option value="浙江">浙江省考</option>
                                         <option value="江西">江西省考</option>
                                         <option value="广东">广东省考</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="dz-guokao-pt-group" style="display:none;">
+                                    <label>卷型</label>
+                                    <select id="dz-guokao-pt" onchange="dzUpdateYear()">
+                                        <option value="">请选择</option>
+                                        <option value="副省级">副省级</option>
+                                        <option value="地市级">地市级</option>
+                                        <option value="行政执法">行政执法</option>
                                     </select>
                                 </div>
                                 <div class="form-group" id="dz-year-group" style="display:none;">
@@ -145,14 +161,14 @@
                                     </select>
                                 </div>
                                 <div class="form-group" id="dz-question-group" style="display:none;">
-                                    <label>选择题目</label>
+                                    <label>题目</label>
                                     <select id="dz-question-select">
                                         <option value="">请选择</option>
                                     </select>
                                 </div>
-                                <div class="form-group" style="flex:0;">
+                                <div class="form-group" id="dz-confirm-group" style="display:none;">
                                     <label>&nbsp;</label>
-                                    <button onclick="dzLoadQuestion()" class="btn-load">确认</button>
+                                    <button onclick="dzLoadQuestion()" class="btn-load btn-sm">确认</button>
                                 </div>
                             </div>
                         </div>
