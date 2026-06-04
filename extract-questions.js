@@ -21,33 +21,79 @@ function extractTextWithTimeout(pdfPath, timeoutMs = 20000) {
     });
 }
 
-function extractQuestionSection(text) {
-    // Find last "作答要求"
-    let lastIdx = -1, searchFrom = 0;
-    while (true) {
-        const idx = text.indexOf('作答要求', searchFrom);
-        if (idx === -1) break;
-        lastIdx = idx;
-        searchFrom = idx + 1;
-    }
-    if (lastIdx < 0) return null;
-
-    let section = text.substring(lastIdx);
-    // Remove answer sections
-    const answerMarkers = ['参考答案', '答案解析', '【解析】'];
-    let minIdx = section.length;
-    for (const am of answerMarkers) {
-        const idx = section.indexOf(am);
-        if (idx > 200 && idx < minIdx) minIdx = idx;
-    }
-    if (minIdx < section.length) section = section.substring(0, minIdx);
-    return section;
+// 清理文本内容
+function cleanText(text) {
+    return text
+        .replace(/\r\n/g, '\n')
+        .replace(/第\s*\d+\s*页\s*共\s*\d+\s*页/g, '')
+        .replace(/关注.*?获取持续更新/g, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
 }
 
-function parseQuestions(qSection) {
+// 提取给定材料部分
+function extractMaterials(text) {
+    const materials = {};
+    // 匹配"材料 1："或"材料1："等格式
+    const materialRegex = /材料\s*(\d+)[：:]/g;
+    const matches = [];
+    let match;
+
+    while ((match = materialRegex.exec(text)) !== null) {
+        matches.push({ id: parseInt(match[1]), index: match.index });
+    }
+
+    // 提取每个材料的内容
+    for (let i = 0; i < matches.length; i++) {
+        const start = matches[i].index;
+        const end = i + 1 < matches.length ? matches[i + 1].index : text.length;
+        let content = text.substring(start, end);
+
+        // 去掉开头的"材料 X："
+        content = content.replace(/^材料\s*\d+[：:]\s*/, '');
+        // 去掉页码
+        content = content.replace(/\d+\s*$/, '').trim();
+
+        materials[matches[i].id] = cleanText(content);
+    }
+
+    return materials;
+}
+
+// 提取作答要求部分
+function extractQuestionSection(text) {
+    const markers = ['作答要求'];
+    for (const marker of markers) {
+        let lastIdx = -1, searchFrom = 0;
+        while (true) {
+            const idx = text.indexOf(marker, searchFrom);
+            if (idx === -1) break;
+            lastIdx = idx;
+            searchFrom = idx + 1;
+        }
+        if (lastIdx >= 0) {
+            let section = text.substring(lastIdx);
+            // 去掉答案部分
+            const answerMarkers = ['参考答案', '答案解析', '【解析】'];
+            let minIdx = section.length;
+            for (const am of answerMarkers) {
+                const idx = section.indexOf(am);
+                if (idx > 200 && idx < minIdx) minIdx = idx;
+            }
+            if (minIdx < section.length) section = section.substring(0, minIdx);
+            return section;
+        }
+    }
+    return null;
+}
+
+// 解析题目
+function parseQuestions(qSection, materials) {
     if (!qSection) return null;
+
     const splitRegex = /(?=第[一二三四五六七八九十]+\s*题[:：]?\s*|^[一二三四五六七八九十]+[、.]\s*|^[（(][一二三四五六七八九十]+[）)]\s*|^[0-9]+[.、]\s*|^问题[一二三四五六七八九十]+\s*[:：]?\s*)/m;
     const parts = qSection.split(splitRegex);
+
     const xiaoti = [];
     let dazuowen = null, id = 1;
 
@@ -66,12 +112,12 @@ function parseQuestions(qSection) {
             .replace(/^[0-9]+[.、]\s*/, '')
             .replace(/^问题[一二三四五六七八九十]+\s*[:：]?\s*/, '')
             .replace(/\r\n/g, '\n')
-            .replace(/第\s*\d+\s*页\s*共\s*\d+\s*页/g, '')  // Remove page footers
-            .replace(/关注.*?获取持续更新/g, '')  // Remove watermarks
-            .replace(/\s+\d+\s*$/, '')  // Remove trailing page numbers
-            .replace(/\n{3,}/g, '\n\n')  // Collapse multiple empty lines
+            .replace(/\r/g, '')
+            .replace(/第\s*\d+\s*页\s*共\s*\d+\s*页/g, '')
+            .replace(/关注.*?获取持续更新/g, '')
+            .replace(/\s+\d+\s*$/, '')
+            .replace(/\n{3,}/g, '\n\n')
             .replace(/([^\n])\n([^\n])/g, (match, p1, p2) => {
-                // Keep line breaks before "要求" or after "分）"
                 if (p2.startsWith('要') || p1.endsWith('）')) return match;
                 return p1 + p2;
             })
@@ -79,12 +125,34 @@ function parseQuestions(qSection) {
 
         if (content.length < 20) continue;
 
+        // 查找题目引用的材料
+        let materialIds = [];
+        const materialRefRegex = /给定材料\s*(\d+)|给定资料\s*(\d+)|材料\s*(\d+)|资料\s*(\d+)/g;
+        let refMatch;
+        while ((refMatch = materialRefRegex.exec(content)) !== null) {
+            const mid = parseInt(refMatch[1] || refMatch[2] || refMatch[3] || refMatch[4]);
+            if (!materialIds.includes(mid)) materialIds.push(mid);
+        }
+
+        // 构建完整题目内容（材料 + 题目）
+        let fullContent = '';
+        if (materialIds.length > 0 && materials) {
+            // 按顺序添加引用的材料
+            materialIds.sort((a, b) => a - b);
+            materialIds.forEach(mid => {
+                if (materials[mid]) {
+                    fullContent += `【给定材料 ${mid}】\n${materials[mid]}\n\n`;
+                }
+            });
+        }
+        fullContent += `【作答要求】\n${content}`;
+
         const scoreMatch = content.match(/(\d+)\s*分/);
         const score = scoreMatch ? parseInt(scoreMatch[1]) : 15;
 
         if (content.includes('写一篇文章') || content.includes('写一篇议论') ||
             (content.includes('自拟题目') && (content.includes('1000') || content.includes('800') || content.includes('1200')))) {
-            dazuowen = { id, score: score || 40, topicType: '单主题', content };
+            dazuowen = { id, score: score || 40, topicType: '单主题', content: fullContent };
         } else {
             let type = '归纳概括题';
             if (content.includes('谈谈') || content.includes('理解') || content.includes('看法') ||
@@ -97,7 +165,7 @@ function parseQuestions(qSection) {
                 content.includes('发言稿') || content.includes('通报') || content.includes('工作方案')) {
                 type = '公文写作题';
             }
-            xiaoti.push({ id, type, score, content });
+            xiaoti.push({ id, type, score, content: fullContent });
         }
         id++;
     }
@@ -113,16 +181,13 @@ function findPDFFile(dir, year, paperType) {
         let matches = files.filter(f => f.endsWith('.pdf') && f.includes(yearStr));
         if (matches.length === 0) return null;
 
-        // If paperType specified, filter by it first
         if (paperType) {
             const typeMatches = matches.filter(f => f.includes(paperType));
             if (typeMatches.length > 0) matches = typeMatches;
         }
 
-        // Prefer files with "试题" or "完整版" (no answer)
         const questionFile = matches.find(f => (f.includes('试题') || f.includes('完整版')) && !f.includes('答案'));
         if (questionFile) return path.join(dir, questionFile);
-        // Then prefer files with "题" (may include answers)
         const anyQuestionFile = matches.find(f => f.includes('题'));
         if (anyQuestionFile) return path.join(dir, anyQuestionFile);
         return path.join(dir, matches[0]);
@@ -142,8 +207,9 @@ async function main() {
             if (!pdfPath) { console.log('NO FILE'); fail++; continue; }
             const text = await extractTextWithTimeout(pdfPath);
             if (!text) { console.log('EXTRACT FAIL'); fail++; continue; }
+            const materials = extractMaterials(text);
             const qSection = extractQuestionSection(text);
-            const result = parseQuestions(qSection);
+            const result = parseQuestions(qSection, materials);
             if (result) {
                 questions['国考'][pt][exam.year] = result;
                 ok++;
@@ -165,8 +231,9 @@ async function main() {
             if (!fs.existsSync(pdfPath)) { console.log('NO FILE'); fail++; continue; }
             const text = await extractTextWithTimeout(pdfPath);
             if (!text) { console.log('EXTRACT FAIL'); fail++; continue; }
+            const materials = extractMaterials(text);
             const qSection = extractQuestionSection(text);
-            const result = parseQuestions(qSection);
+            const result = parseQuestions(qSection, materials);
             if (result) {
                 if (!questions[province][note]) questions[province][note] = {};
                 questions[province][note][exam.year] = result;
