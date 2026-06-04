@@ -65,6 +65,12 @@ function parseQuestions(qSection) {
             .replace(/^[（(][一二三四五六七八九十]+[）)]\s*/, '')
             .replace(/^[0-9]+[.、]\s*/, '')
             .replace(/^问题[一二三四五六七八九十]+\s*[:：]?\s*/, '')
+            .replace(/\r\n/g, '\n')
+            .replace(/([^\n])\n([^\n])/g, '$1$2')  // Remove single line breaks within sentences
+            .replace(/\n{3,}/g, '\n\n')  // Collapse multiple empty lines
+            .replace(/第\s*\d+\s*页\s*共\s*\d+\s*页/g, '')  // Remove page footers
+            .replace(/关注.*?获取持续更新/g, '')  // Remove watermarks
+            .replace(/\s+\d+\s*$/, '')  // Remove trailing page numbers
             .trim();
 
         if (content.length < 20) continue;
@@ -96,14 +102,23 @@ function parseQuestions(qSection) {
     return { xiaoti, dazuowen };
 }
 
-function findPDFFile(dir, year) {
+function findPDFFile(dir, year, paperType) {
     try {
         const files = fs.readdirSync(dir);
         const yearStr = String(year);
         let matches = files.filter(f => f.endsWith('.pdf') && f.includes(yearStr));
         if (matches.length === 0) return null;
+
+        // If paperType specified, filter by it first
+        if (paperType) {
+            const typeMatches = matches.filter(f => f.includes(paperType));
+            if (typeMatches.length > 0) matches = typeMatches;
+        }
+
+        // Prefer files with "试题" or "完整版" (no answer)
         const questionFile = matches.find(f => (f.includes('试题') || f.includes('完整版')) && !f.includes('答案'));
         if (questionFile) return path.join(dir, questionFile);
+        // Then prefer files with "题" (may include answers)
         const anyQuestionFile = matches.find(f => f.includes('题'));
         if (anyQuestionFile) return path.join(dir, anyQuestionFile);
         return path.join(dir, matches[0]);
@@ -119,7 +134,7 @@ async function main() {
     for (const pt of ['副省级', '地市级', '行政执法']) {
         for (const exam of index['国考'][pt]) {
             process.stdout.write(`国考 ${pt} ${exam.year}... `);
-            const pdfPath = findPDFFile(PDF_PATHS['国考'], exam.year);
+            const pdfPath = findPDFFile(PDF_PATHS['国考'], exam.year, pt);
             if (!pdfPath) { console.log('NO FILE'); fail++; continue; }
             const text = await extractTextWithTimeout(pdfPath);
             if (!text) { console.log('EXTRACT FAIL'); fail++; continue; }
