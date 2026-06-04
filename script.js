@@ -81,6 +81,41 @@ function getAllAvailableYears(category) {
 function hideRow(id) { document.getElementById(id).style.display = 'none'; }
 function showRow(id, display) { document.getElementById(id).style.display = display || 'block'; }
 
+// 格式化题目内容为HTML
+function formatQuestionContent(content) {
+    if (!content) return '<div class="question-placeholder">请从上方选择真题后点击确认加载...</div>';
+
+    // 分割题目要求和材料
+    const parts = content.split(/(?=【材料\d+】)/);
+    let html = '';
+
+    // 第一部分是题目和要求
+    const questionPart = parts[0];
+    const reqMatch = questionPart.match(/([\s\S]*?)(要求[：:][\s\S]*$)/);
+
+    if (reqMatch) {
+        // 题目文本
+        html += `<div class="question-text">${escapeHTML(reqMatch[1].trim())}</div>`;
+        // 要求部分
+        html += `<div class="question-requirements"><strong>要求：</strong>${escapeHTML(reqMatch[2].replace(/^要求[：:]\s*/, ''))}</div>`;
+    } else {
+        html += `<div class="question-text">${escapeHTML(questionPart.trim())}</div>`;
+    }
+
+    // 材料部分
+    for (let i = 1; i < parts.length; i++) {
+        const materialMatch = parts[i].match(/【材料(\d+)】\s*([\s\S]*)/);
+        if (materialMatch) {
+            html += `<div class="question-material">`;
+            html += `<div class="question-material-header">材料${materialMatch[1]}</div>`;
+            html += `<div class="question-material-content">${escapeHTML(materialMatch[2].trim())}</div>`;
+            html += `</div>`;
+        }
+    }
+
+    return html;
+}
+
 // ========== 小题训练：真题选择逻辑 ==========
 
 function xtOnCategoryChange() {
@@ -181,7 +216,7 @@ function xtLoadQuestion() {
     const q = examQuestions[cat]?.[pt]?.[year]?.xiaoti?.find(x => x.id == qId);
     if (!q) return;
 
-    document.getElementById('xiaoti-question').value = q.content;
+    document.getElementById('xiaoti-question').innerHTML = formatQuestionContent(q.content);
     document.getElementById('xiaoti-type').value = q.type;
     showAlert(`已加载 ${year}年${cat}${pt} 第${q.id}题`, 'success');
 }
@@ -277,7 +312,7 @@ function dzLoadQuestion() {
     const e = examQuestions[cat]?.[pt]?.[year]?.dazuowen;
     if (!e) return;
 
-    document.getElementById('dazuowen-question').value = e.content;
+    document.getElementById('dazuowen-question').innerHTML = formatQuestionContent(e.content);
     document.getElementById('dazuowen-type').value = e.topicType;
     showAlert(`已加载 ${year}年${cat}${pt} 大作文`, 'success');
 }
@@ -285,7 +320,7 @@ function dzLoadQuestion() {
 // ========== 小题分析功能 ==========
 
 function analyzeXiaoti() {
-    const question = document.getElementById('xiaoti-question').value;
+    const question = document.getElementById('xiaoti-question').textContent;
     const type = document.getElementById('xiaoti-type').value;
 
     if (!question.trim()) {
@@ -383,7 +418,7 @@ function analyzeXiaoti() {
 // ========== 小题批改功能 ==========
 
 function evaluateXiaoti() {
-    const question = document.getElementById('xiaoti-question').value;
+    const question = document.getElementById('xiaoti-question').textContent;
     const answer = document.getElementById('xiaoti-answer').value;
     const type = document.getElementById('xiaoti-type').value;
 
@@ -472,7 +507,7 @@ function evaluateXiaoti() {
 // ========== 大作文分析功能 ==========
 
 function analyzeDazuowen() {
-    const question = document.getElementById('dazuowen-question').value;
+    const question = document.getElementById('dazuowen-question').textContent;
     const type = document.getElementById('dazuowen-type').value;
 
     if (!question.trim()) {
@@ -587,7 +622,7 @@ function analyzeDazuowen() {
 // ========== 大作文批改功能 ==========
 
 function evaluateDazuowen() {
-    const question = document.getElementById('dazuowen-question').value;
+    const question = document.getElementById('dazuowen-question').textContent;
     const answer = document.getElementById('dazuowen-answer').value;
     const type = document.getElementById('dazuowen-type').value;
 
