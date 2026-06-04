@@ -69,6 +69,5 @@ pids
 
 # 项目特定
 *.docx
-*.pdf
 temp/
 backup/
