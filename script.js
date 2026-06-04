@@ -1,14 +1,15 @@
 // 申论备考训练系统 JavaScript
 
-// 真题数据
-let examsData = null;
+// 真题索引数据（用于PDF路径）
+let examsIndex = null;
+// 真题题目数据（用于训练模块）
+let examQuestions = null;
 
 // 页面导航
 document.addEventListener('DOMContentLoaded', function() {
-    // 初始化页面
     initNavigation();
     initForms();
-    loadExamsData();
+    loadAllData();
 });
 
 // 初始化导航
@@ -21,11 +22,9 @@ function initNavigation() {
             e.preventDefault();
             const targetId = this.getAttribute('href').substring(1);
 
-            // 更新导航链接状态
             navLinks.forEach(l => l.classList.remove('active'));
             this.classList.add('active');
 
-            // 更新页面显示
             sections.forEach(section => {
                 section.classList.remove('active');
                 if (section.id === targetId) {
@@ -38,14 +37,287 @@ function initNavigation() {
 
 // 初始化表单
 function initForms() {
-    // 设置默认年份
     const yearInput = document.getElementById('exam-year');
     if (yearInput) {
         yearInput.value = new Date().getFullYear();
     }
 }
 
-// 小题分析功能
+// 加载所有数据
+async function loadAllData() {
+    try {
+        const [indexRes, questionsRes] = await Promise.all([
+            fetch('exams-index.json'),
+            fetch('exam-questions.json')
+        ]);
+        if (!indexRes.ok || !questionsRes.ok) {
+            throw new Error(`HTTP ${indexRes.status} / ${questionsRes.status}`);
+        }
+        examsIndex = await indexRes.json();
+        examQuestions = await questionsRes.json();
+        console.log('真题数据加载成功');
+    } catch (error) {
+        console.error('加载真题数据失败:', error);
+        examQuestions = null;
+    }
+}
+
+// ========== 小题训练：真题选择逻辑 ==========
+
+// 小题训练 - 考试类型变更
+function xtUpdatePaperType() {
+    const category = document.getElementById('xt-exam-category').value;
+    const paperGroup = document.getElementById('xt-paper-group');
+    const yearGroup = document.getElementById('xt-year-group');
+    const questionGroup = document.getElementById('xt-question-group');
+    const paperSelect = document.getElementById('xt-paper-type');
+
+    // 重置下游
+    paperSelect.innerHTML = '<option value="">请选择</option>';
+    document.getElementById('xt-exam-year').innerHTML = '<option value="">请选择</option>';
+    document.getElementById('xt-question-select').innerHTML = '<option value="">请选择</option>';
+    yearGroup.style.display = 'none';
+    questionGroup.style.display = 'none';
+
+    if (!category || !examQuestions) {
+        paperGroup.style.display = 'none';
+        return;
+    }
+
+    const data = examQuestions[category];
+    if (!data) {
+        paperGroup.style.display = 'none';
+        return;
+    }
+
+    // 判断是否有卷型（国考按卷型分组，省考也按卷型分组）
+    const paperTypes = Object.keys(data);
+    if (paperTypes.length === 1) {
+        // 只有一个卷型，跳过卷型选择，直接显示年份
+        paperGroup.style.display = 'none';
+        xtPopulateYears(category, paperTypes[0], 'xt');
+    } else {
+        paperGroup.style.display = 'block';
+        paperTypes.forEach(pt => {
+            const opt = document.createElement('option');
+            opt.value = pt;
+            opt.textContent = pt;
+            paperSelect.appendChild(opt);
+        });
+    }
+}
+
+// 小题训练 - 卷型变更
+function xtUpdateYear() {
+    const category = document.getElementById('xt-exam-category').value;
+    const paperType = document.getElementById('xt-paper-type').value;
+    if (!category || !paperType) return;
+    xtPopulateYears(category, paperType, 'xt');
+}
+
+// 小题训练 - 年份变更
+function xtUpdateQuestionList() {
+    if (!examQuestions) return;
+    const category = document.getElementById('xt-exam-category').value;
+    const paperType = document.getElementById('xt-paper-type').value;
+    const year = document.getElementById('xt-exam-year').value;
+    const questionGroup = document.getElementById('xt-question-group');
+    const questionSelect = document.getElementById('xt-question-select');
+
+    questionSelect.innerHTML = '<option value="">请选择</option>';
+
+    if (!year) {
+        questionGroup.style.display = 'none';
+        return;
+    }
+
+    // 获取该年份的卷型
+    const actualPaperType = paperType || Object.keys(examQuestions[category])[0];
+    const yearData = examQuestions[category]?.[actualPaperType]?.[year];
+
+    if (!yearData || !yearData.xiaoti || yearData.xiaoti.length === 0) {
+        questionGroup.style.display = 'none';
+        showAlert('该年份暂无小题数据', 'warning');
+        return;
+    }
+
+    questionGroup.style.display = 'flex';
+    yearData.xiaoti.forEach(q => {
+        const opt = document.createElement('option');
+        opt.value = q.id;
+        opt.textContent = `第${q.id}题 - ${q.type}（${q.score}分）`;
+        questionSelect.appendChild(opt);
+    });
+}
+
+// 小题训练 - 加载题目
+function xtLoadQuestion() {
+    if (!examQuestions) { showAlert('数据未加载，请刷新页面重试', 'danger'); return; }
+    const category = document.getElementById('xt-exam-category').value;
+    const paperType = document.getElementById('xt-paper-type').value;
+    const year = document.getElementById('xt-exam-year').value;
+    const questionId = document.getElementById('xt-question-select').value;
+
+    if (!year || !questionId) {
+        showAlert('请先选择年份和题目', 'warning');
+        return;
+    }
+
+    const actualPaperType = paperType || Object.keys(examQuestions[category])[0];
+    const yearData = examQuestions[category]?.[actualPaperType]?.[year];
+    if (!yearData) return;
+
+    const question = yearData.xiaoti.find(q => q.id == questionId);
+    if (!question) return;
+
+    // 填充题目
+    document.getElementById('xiaoti-question').value = question.content;
+
+    // 自动选择题型
+    const typeSelect = document.getElementById('xiaoti-type');
+    for (let i = 0; i < typeSelect.options.length; i++) {
+        if (typeSelect.options[i].value === question.type) {
+            typeSelect.selectedIndex = i;
+            break;
+        }
+    }
+
+    showAlert(`已加载 ${year}年${category}${actualPaperType} 第${question.id}题`, 'success');
+}
+
+// 通用：填充年份下拉
+function xtPopulateYears(category, paperType, prefix) {
+    const yearGroup = document.getElementById(`${prefix}-year-group`);
+    const yearSelect = document.getElementById(`${prefix}-exam-year`);
+    const questionGroup = document.getElementById(`${prefix}-question-group`);
+
+    yearSelect.innerHTML = '<option value="">请选择</option>';
+    if (questionGroup) questionGroup.style.display = 'none';
+
+    const data = examQuestions?.[category]?.[paperType];
+    if (!data) {
+        yearGroup.style.display = 'none';
+        return;
+    }
+
+    yearGroup.style.display = 'block';
+    const years = Object.keys(data).sort((a, b) => b - a);
+    years.forEach(y => {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y + '年';
+        yearSelect.appendChild(opt);
+    });
+}
+
+// ========== 大作文训练：真题选择逻辑 ==========
+
+// 大作文训练 - 考试类型变更
+function dzUpdatePaperType() {
+    const category = document.getElementById('dz-exam-category').value;
+    const paperGroup = document.getElementById('dz-paper-group');
+    const yearGroup = document.getElementById('dz-year-group');
+    const paperSelect = document.getElementById('dz-paper-type');
+
+    paperSelect.innerHTML = '<option value="">请选择</option>';
+    document.getElementById('dz-exam-year').innerHTML = '<option value="">请选择</option>';
+    yearGroup.style.display = 'none';
+
+    if (!category || !examQuestions) {
+        paperGroup.style.display = 'none';
+        return;
+    }
+
+    const data = examQuestions[category];
+    if (!data) {
+        paperGroup.style.display = 'none';
+        return;
+    }
+
+    const paperTypes = Object.keys(data);
+    if (paperTypes.length === 1) {
+        paperGroup.style.display = 'none';
+        dzPopulateYears(category, paperTypes[0]);
+    } else {
+        paperGroup.style.display = 'block';
+        paperTypes.forEach(pt => {
+            const opt = document.createElement('option');
+            opt.value = pt;
+            opt.textContent = pt;
+            paperSelect.appendChild(opt);
+        });
+    }
+}
+
+// 大作文训练 - 卷型变更
+function dzUpdateYear() {
+    const category = document.getElementById('dz-exam-category').value;
+    const paperType = document.getElementById('dz-paper-type').value;
+    if (!category || !paperType) return;
+    dzPopulateYears(category, paperType);
+}
+
+// 大作文训练 - 加载题目
+function dzLoadQuestion() {
+    if (!examQuestions) { showAlert('数据未加载，请刷新页面重试', 'danger'); return; }
+    const category = document.getElementById('dz-exam-category').value;
+    const paperType = document.getElementById('dz-paper-type').value;
+    const year = document.getElementById('dz-exam-year').value;
+
+    if (!year) {
+        showAlert('请先选择年份', 'warning');
+        return;
+    }
+
+    const actualPaperType = paperType || Object.keys(examQuestions[category])[0];
+    const yearData = examQuestions[category]?.[actualPaperType]?.[year];
+    if (!yearData || !yearData.dazuowen) {
+        showAlert('该年份暂无大作文数据', 'warning');
+        return;
+    }
+
+    const essay = yearData.dazuowen;
+
+    // 填充题目
+    document.getElementById('dazuowen-question').value = essay.content;
+
+    // 自动选择主题类型
+    const typeSelect = document.getElementById('dazuowen-type');
+    for (let i = 0; i < typeSelect.options.length; i++) {
+        if (typeSelect.options[i].value === essay.topicType) {
+            typeSelect.selectedIndex = i;
+            break;
+        }
+    }
+
+    showAlert(`已加载 ${year}年${category}${actualPaperType} 大作文（${essay.topicType}，${essay.score}分）`, 'success');
+}
+
+// 大作文训练 - 填充年份
+function dzPopulateYears(category, paperType) {
+    const yearGroup = document.getElementById('dz-year-group');
+    const yearSelect = document.getElementById('dz-exam-year');
+
+    yearSelect.innerHTML = '<option value="">请选择</option>';
+
+    const data = examQuestions?.[category]?.[paperType];
+    if (!data) {
+        yearGroup.style.display = 'none';
+        return;
+    }
+
+    yearGroup.style.display = 'block';
+    const years = Object.keys(data).sort((a, b) => b - a);
+    years.forEach(y => {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y + '年';
+        yearSelect.appendChild(opt);
+    });
+}
+
+// ========== 小题分析功能 ==========
+
 function analyzeXiaoti() {
     const question = document.getElementById('xiaoti-question').value;
     const type = document.getElementById('xiaoti-type').value;
@@ -60,7 +332,6 @@ function analyzeXiaoti() {
         return;
     }
 
-    // 显示分析结果
     const resultSection = document.getElementById('xiaoti-result');
     const feedbackDiv = document.getElementById('xiaoti-feedback');
 
@@ -70,11 +341,10 @@ function analyzeXiaoti() {
         <div class="feedback-section">
             <h4>题目分析</h4>
             <p><strong>题型：</strong>${type}</p>
-            <p><strong>题目内容：</strong>${question.substring(0, 100)}${question.length > 100 ? '...' : ''}</p>
+            <p><strong>题目内容：</strong>${escapeHTML(question.substring(0, 100))}${question.length > 100 ? '...' : ''}</p>
         </div>
     `;
 
-    // 根据题型提供分析指导
     switch (type) {
         case '归纳概括题':
             analysisHTML += `
@@ -144,7 +414,8 @@ function analyzeXiaoti() {
     feedbackDiv.innerHTML = analysisHTML;
 }
 
-// 小题批改功能
+// ========== 小题批改功能 ==========
+
 function evaluateXiaoti() {
     const question = document.getElementById('xiaoti-question').value;
     const answer = document.getElementById('xiaoti-answer').value;
@@ -155,14 +426,12 @@ function evaluateXiaoti() {
         return;
     }
 
-    // 显示批改结果
     const resultSection = document.getElementById('xiaoti-result');
     const feedbackDiv = document.getElementById('xiaoti-feedback');
 
     resultSection.style.display = 'block';
 
-    // 模拟评分（实际应用中需要调用后端API）
-    const score = Math.floor(Math.random() * 40) + 60; // 60-100分
+    const score = Math.floor(Math.random() * 40) + 60;
     const totalScore = 100;
 
     let evaluationHTML = `
@@ -185,7 +454,7 @@ function evaluateXiaoti() {
                 <tbody>
                     <tr>
                         <td>1</td>
-                        <td>${answer.substring(0, 50)}...</td>
+                        <td>${escapeHTML(answer.substring(0, 50))}...</td>
                         <td>✓</td>
                         <td>基本符合要求</td>
                     </tr>
@@ -234,7 +503,8 @@ function evaluateXiaoti() {
     feedbackDiv.innerHTML = evaluationHTML;
 }
 
-// 大作文分析功能
+// ========== 大作文分析功能 ==========
+
 function analyzeDazuowen() {
     const question = document.getElementById('dazuowen-question').value;
     const type = document.getElementById('dazuowen-type').value;
@@ -249,7 +519,6 @@ function analyzeDazuowen() {
         return;
     }
 
-    // 显示分析结果
     const resultSection = document.getElementById('dazuowen-result');
     const feedbackDiv = document.getElementById('dazuowen-feedback');
 
@@ -259,11 +528,10 @@ function analyzeDazuowen() {
         <div class="feedback-section">
             <h4>题目分析</h4>
             <p><strong>主题类型：</strong>${type}</p>
-            <p><strong>题目内容：</strong>${question.substring(0, 100)}${question.length > 100 ? '...' : ''}</p>
+            <p><strong>题目内容：</strong>${escapeHTML(question.substring(0, 100))}${question.length > 100 ? '...' : ''}</p>
         </div>
     `;
 
-    // 根据主题类型提供分析指导
     switch (type) {
         case '单主题':
             analysisHTML += `
@@ -335,7 +603,6 @@ function analyzeDazuowen() {
             break;
     }
 
-    // 添加通用指导
     analysisHTML += `
         <div class="feedback-section">
             <h4>分论点寻找法（三步走）</h4>
@@ -351,7 +618,8 @@ function analyzeDazuowen() {
     feedbackDiv.innerHTML = analysisHTML;
 }
 
-// 大作文批改功能
+// ========== 大作文批改功能 ==========
+
 function evaluateDazuowen() {
     const question = document.getElementById('dazuowen-question').value;
     const answer = document.getElementById('dazuowen-answer').value;
@@ -362,15 +630,13 @@ function evaluateDazuowen() {
         return;
     }
 
-    // 显示批改结果
     const resultSection = document.getElementById('dazuowen-result');
     const feedbackDiv = document.getElementById('dazuowen-feedback');
 
     resultSection.style.display = 'block';
 
-    // 模拟评分（实际应用中需要调用后端API）
     const totalScore = 40;
-    const score = Math.floor(Math.random() * 20) + 20; // 20-40分
+    const score = Math.floor(Math.random() * 20) + 20;
 
     let evaluationHTML = `
         <div class="feedback-section">
@@ -440,7 +706,7 @@ function evaluateDazuowen() {
                     <tr>
                         <td>论证充分性</td>
                         <td>20%</td>
-                        <td>${Math.floor(score * 0.15)}</td>
+                        <td>${Math.floor(score * 0.2)}</td>
                         <td>双线论述可加强</td>
                     </tr>
                     <tr>
@@ -452,7 +718,7 @@ function evaluateDazuowen() {
                     <tr>
                         <td>语言表达</td>
                         <td>15%</td>
-                        <td>${Math.floor(score * 0.2)}</td>
+                        <td>${Math.floor(score * 0.15)}</td>
                         <td>简洁有力</td>
                     </tr>
                 </tbody>
@@ -491,19 +757,18 @@ function evaluateDazuowen() {
     feedbackDiv.innerHTML = evaluationHTML;
 }
 
-// 命题预判功能
+// ========== 命题预判功能 ==========
+
 function predictExam() {
     const examType = document.getElementById('exam-type').value;
     const examPaper = document.getElementById('exam-paper').value;
     const examYear = document.getElementById('exam-year').value;
 
-    // 显示预判结果
     const resultSection = document.getElementById('prediction-result');
     const feedbackDiv = document.getElementById('prediction-feedback');
 
     resultSection.style.display = 'block';
 
-    // 根据考试类型生成预判
     let predictionHTML = `
         <div class="feedback-section">
             <h4>${examYear}年${examType}${examPaper}命题预判</h4>
@@ -511,7 +776,6 @@ function predictExam() {
         </div>
     `;
 
-    // 根据不同考试类型提供预判
     if (examType === '国考') {
         if (examPaper === '副省级') {
             predictionHTML += `
@@ -555,7 +819,7 @@ function predictExam() {
                     <p><strong>素材建议：</strong>就业、教育、医疗、养老等案例</p>
                 </div>
             `;
-        } else { // 行政执法
+        } else {
             predictionHTML += `
                 <div class="feedback-section">
                     <h4>预判方向一：法治政府建设</h4>
@@ -598,7 +862,7 @@ function predictExam() {
                 <p><strong>素材建议：</strong>污染防治、生态修复、绿色低碳等案例</p>
             </div>
         `;
-    } else { // 事业单位
+    } else {
         predictionHTML += `
             <div class="feedback-section">
                 <h4>预判方向一：公共服务能力提升</h4>
@@ -621,7 +885,6 @@ function predictExam() {
         `;
     }
 
-    // 添加备考建议
     predictionHTML += `
         <div class="feedback-section">
             <h4>备考建议</h4>
@@ -637,8 +900,20 @@ function predictExam() {
     feedbackDiv.innerHTML = predictionHTML;
 }
 
-// 显示提示信息
+// ========== 工具函数 ==========
+
+// HTML转义防XSS
+function escapeHTML(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
 function showAlert(message, type) {
+    // 移除已有提示，防止堆叠
+    const existing = document.querySelectorAll('.alert');
+    existing.forEach(el => el.remove());
+
     const alertDiv = document.createElement('div');
     alertDiv.className = `alert alert-${type}`;
     alertDiv.textContent = message;
@@ -646,201 +921,7 @@ function showAlert(message, type) {
     const main = document.querySelector('main');
     main.insertBefore(alertDiv, main.firstChild);
 
-    // 3秒后自动消失
     setTimeout(() => {
         alertDiv.remove();
     }, 3000);
-}
-
-// 工具函数：格式化日期
-function formatDate(date) {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
-
-// 工具函数：生成随机ID
-function generateId() {
-    return Math.random().toString(36).substr(2, 9);
-}
-
-// 加载真题数据
-async function loadExamsData() {
-    try {
-        const response = await fetch('exams-index.json');
-        examsData = await response.json();
-        console.log('真题数据加载成功');
-    } catch (error) {
-        console.error('加载真题数据失败:', error);
-    }
-}
-
-// 更新考试选项
-function updateExamOptions() {
-    const category = document.getElementById('exam-category').value;
-    const paperTypeGroup = document.getElementById('paper-type-group');
-    const yearGroup = document.getElementById('year-group');
-    const examList = document.getElementById('exam-list');
-    const paperTypeSelect = document.getElementById('paper-type');
-    const yearSelect = document.getElementById('exam-year');
-
-    // 重置
-    paperTypeSelect.innerHTML = '<option value="">请选择卷型</option>';
-    yearSelect.innerHTML = '<option value="">请选择年份</option>';
-    examList.style.display = 'none';
-
-    if (!category) {
-        paperTypeGroup.style.display = 'none';
-        yearGroup.style.display = 'none';
-        return;
-    }
-
-    if (category === '国考') {
-        paperTypeGroup.style.display = 'block';
-        yearGroup.style.display = 'none';
-
-        // 添加国考卷型选项
-        const paperTypes = Object.keys(examsData['国考']);
-        paperTypes.forEach(type => {
-            const option = document.createElement('option');
-            option.value = type;
-            option.textContent = type;
-            paperTypeSelect.appendChild(option);
-        });
-    } else {
-        paperTypeGroup.style.display = 'none';
-        yearGroup.style.display = 'block';
-
-        // 添加年份选项
-        const years = [...new Set(examsData[category].map(exam => exam.year))].sort((a, b) => b - a);
-        years.forEach(year => {
-            const option = document.createElement('option');
-            option.value = year;
-            option.textContent = year + '年';
-            yearSelect.appendChild(option);
-        });
-    }
-}
-
-// 更新年份选项（国考）
-function updateYearOptions() {
-    const category = document.getElementById('exam-category').value;
-    const paperType = document.getElementById('paper-type').value;
-    const yearGroup = document.getElementById('year-group');
-    const yearSelect = document.getElementById('exam-year');
-    const examList = document.getElementById('exam-list');
-
-    yearSelect.innerHTML = '<option value="">请选择年份</option>';
-    examList.style.display = 'none';
-
-    if (!paperType) {
-        yearGroup.style.display = 'none';
-        return;
-    }
-
-    yearGroup.style.display = 'block';
-
-    // 添加年份选项
-    const years = examsData['国考'][paperType].map(exam => exam.year).sort((a, b) => b - a);
-    years.forEach(year => {
-        const option = document.createElement('option');
-        option.value = year;
-        option.textContent = year + '年';
-        yearSelect.appendChild(option);
-    });
-}
-
-// 更新真题列表
-function updateExamList() {
-    const category = document.getElementById('exam-category').value;
-    const paperType = document.getElementById('paper-type').value;
-    const year = document.getElementById('exam-year').value;
-    const examList = document.getElementById('exam-list');
-    const examItems = document.getElementById('exam-items');
-
-    if (!year) {
-        examList.style.display = 'none';
-        return;
-    }
-
-    examList.style.display = 'block';
-    examItems.innerHTML = '';
-
-    let exams = [];
-
-    if (category === '国考') {
-        exams = examsData['国考'][paperType].filter(exam => exam.year == year);
-    } else {
-        exams = examsData[category].filter(exam => exam.year == year);
-    }
-
-    if (exams.length === 0) {
-        examItems.innerHTML = '<p>没有找到匹配的真题</p>';
-        return;
-    }
-
-    exams.forEach(exam => {
-        const examItem = document.createElement('div');
-        examItem.className = 'exam-item';
-        examItem.innerHTML = `
-            <h4>${exam.year}年${category}${category === '国考' ? paperType : ''}申论真题</h4>
-            <p>${exam.note || '完整试卷'}</p>
-            <p><strong>文件名：</strong>${exam.file}</p>
-        `;
-        examItem.onclick = () => showExamDetail(exam, category, paperType);
-        examItems.appendChild(examItem);
-    });
-}
-
-// 显示真题详情
-function showExamDetail(exam, category, paperType) {
-    const examViewer = document.getElementById('exam-viewer');
-    const examContent = document.getElementById('exam-content');
-
-    examViewer.style.display = 'block';
-
-    // 构建PDF文件路径
-    let pdfPath = '';
-
-    if (category === '国考') {
-        pdfPath = `D:/zhenti/2010-2024国考申论PDF/${exam.file}`;
-    } else if (category === '广东') {
-        pdfPath = `D:/zhenti/【05】广东公务员考试真题pdf版/广东公务员考试真题——申论03-24/${exam.file}`;
-    } else if (category === '江西') {
-        pdfPath = `D:/zhenti/【16】江西公务员考试真题pdf版/江西公务员考试真题——申论06-24PDF版/${exam.file}`;
-    } else if (category === '浙江') {
-        pdfPath = `D:/zhenti/【30】浙江公务员考试真题pdf版/浙江公务员考试真题——申论04-24【缺22】/${exam.file}`;
-    }
-
-    examContent.innerHTML = `
-        <h4>${exam.year}年${category}${category === '国考' ? paperType : ''}申论真题</h4>
-        <p><strong>考试类型：</strong>${category}${category === '国考' ? ' - ' + paperType : ''}</p>
-        <p><strong>年份：</strong>${exam.year}年</p>
-        <p><strong>说明：</strong>${exam.note || '完整试卷'}</p>
-        <p><strong>文件名：</strong>${exam.file}</p>
-        <p><strong>文件路径：</strong>${pdfPath}</p>
-        <div style="margin-top: 20px;">
-            <a href="file:///${pdfPath.replace(/\\/g, '/')}" class="pdf-link" target="_blank">打开PDF文件</a>
-            <button onclick="copyToClipboard('${pdfPath}')" style="margin-left: 10px; padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">复制路径</button>
-        </div>
-        <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
-            <h5>使用说明：</h5>
-            <ol>
-                <li>点击"打开PDF文件"按钮直接打开真题PDF</li>
-                <li>或者点击"复制路径"按钮，然后在文件管理器中粘贴路径打开</li>
-                <li>打开PDF后，可以将题目内容复制到"小题训练"或"大作文训练"模块进行练习</li>
-            </ol>
-        </div>
-    `;
-}
-
-// 复制到剪贴板
-function copyToClipboard(text) {
-    navigator.clipboard.writeText(text).then(() => {
-        showAlert('路径已复制到剪贴板', 'success');
-    }).catch(err => {
-        console.error('复制失败:', err);
-        showAlert('复制失败，请手动复制', 'danger');
-    });
 }

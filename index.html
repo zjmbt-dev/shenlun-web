@@ -24,7 +24,6 @@
                 <li><a href="#dazuowen">大作文训练</a></li>
                 <li><a href="#yuce">命题预判</a></li>
                 <li><a href="#scoring">评分系统</a></li>
-                <li><a href="#zhenti">真题库</a></li>
             </ul>
         </div>
     </nav>
@@ -62,8 +61,47 @@
                 <h2>小题训练模块</h2>
                 <div class="training-module">
                     <div class="input-section">
-                        <h3>输入题目</h3>
-                        <textarea id="xiaoti-question" placeholder="请输入申论小题题目内容..."></textarea>
+                        <h3>从真题库加载</h3>
+                        <div class="exam-source">
+                            <div class="exam-source-row">
+                                <div class="form-group">
+                                    <label>考试类型</label>
+                                    <select id="xt-exam-category" onchange="xtUpdatePaperType()">
+                                        <option value="">请选择</option>
+                                        <option value="国考">国考</option>
+                                        <option value="浙江">浙江省考</option>
+                                        <option value="江西">江西省考</option>
+                                        <option value="广东">广东省考</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="xt-paper-group" style="display:none;">
+                                    <label>卷型</label>
+                                    <select id="xt-paper-type" onchange="xtUpdateYear()">
+                                        <option value="">请选择</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="xt-year-group" style="display:none;">
+                                    <label>年份</label>
+                                    <select id="xt-exam-year" onchange="xtUpdateQuestionList()">
+                                        <option value="">请选择</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="exam-source-row" id="xt-question-group" style="display:none;">
+                                <div class="form-group" style="flex:2;">
+                                    <label>选择题目</label>
+                                    <select id="xt-question-select">
+                                        <option value="">请选择</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="flex:0;">
+                                    <label>&nbsp;</label>
+                                    <button onclick="xtLoadQuestion()" class="btn-load">加载题目</button>
+                                </div>
+                            </div>
+                        </div>
+                        <h3 style="margin-top:20px;">输入题目</h3>
+                        <textarea id="xiaoti-question" placeholder="请输入申论小题题目内容，或从上方真题库加载..."></textarea>
                         <div class="controls">
                             <select id="xiaoti-type">
                                 <option value="">选择题型</option>
@@ -92,8 +130,39 @@
                 <h2>大作文训练模块</h2>
                 <div class="training-module">
                     <div class="input-section">
-                        <h3>输入题目</h3>
-                        <textarea id="dazuowen-question" placeholder="请输入大作文题目..."></textarea>
+                        <h3>从真题库加载</h3>
+                        <div class="exam-source">
+                            <div class="exam-source-row">
+                                <div class="form-group">
+                                    <label>考试类型</label>
+                                    <select id="dz-exam-category" onchange="dzUpdatePaperType()">
+                                        <option value="">请选择</option>
+                                        <option value="国考">国考</option>
+                                        <option value="浙江">浙江省考</option>
+                                        <option value="江西">江西省考</option>
+                                        <option value="广东">广东省考</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="dz-paper-group" style="display:none;">
+                                    <label>卷型</label>
+                                    <select id="dz-paper-type" onchange="dzUpdateYear()">
+                                        <option value="">请选择</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" id="dz-year-group" style="display:none;">
+                                    <label>年份</label>
+                                    <select id="dz-exam-year">
+                                        <option value="">请选择</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="flex:0;">
+                                    <label>&nbsp;</label>
+                                    <button onclick="dzLoadQuestion()" class="btn-load">加载大作文</button>
+                                </div>
+                            </div>
+                        </div>
+                        <h3 style="margin-top:20px;">输入题目</h3>
+                        <textarea id="dazuowen-question" placeholder="请输入大作文题目，或从上方真题库加载..."></textarea>
                         <div class="controls">
                             <select id="dazuowen-type">
                                 <option value="">选择主题类型</option>
@@ -215,50 +284,6 @@
                                 </tr>
                             </tbody>
                         </table>
-                    </div>
-                </div>
-            </div>
-        </section>
-            <section id="zhenti">
-            <div class="container">
-                <h2>真题库</h2>
-                <div class="zhenti-module">
-                    <div class="exam-selector">
-                        <h3>选择真题</h3>
-                        <div class="selector-group">
-                            <div class="form-group">
-                                <label>考试类型：</label>
-                                <select id="exam-category" onchange="updateExamOptions()">
-                                    <option value="">请选择考试类型</option>
-                                    <option value="国考">国考</option>
-                                    <option value="广东">广东省考</option>
-                                    <option value="江西">江西省考</option>
-                                    <option value="浙江">浙江省考</option>
-                                </select>
-                            </div>
-                            <div class="form-group" id="paper-type-group" style="display: none;">
-                                <label>卷型：</label>
-                                <select id="paper-type" onchange="updateYearOptions()">
-                                    <option value="">请选择卷型</option>
-                                </select>
-                            </div>
-                            <div class="form-group" id="year-group" style="display: none;">
-                                <label>年份：</label>
-                                <select id="exam-year" onchange="updateExamList()">
-                                    <option value="">请选择年份</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="exam-list" id="exam-list" style="display: none;">
-                        <h3>可用真题</h3>
-                        <div id="exam-items"></div>
-                    </div>
-                    <div class="exam-viewer" id="exam-viewer" style="display: none;">
-                        <h3>真题预览</h3>
-                        <div id="exam-content">
-                            <p>请选择一个真题开始练习</p>
-                        </div>
                     </div>
                 </div>
             </div>
