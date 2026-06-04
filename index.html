@@ -99,21 +99,13 @@
                                 </div>
                                 <div class="form-group" style="flex:0;">
                                     <label>&nbsp;</label>
-                                    <button onclick="xtLoadQuestion()" class="btn-load">真题示例</button>
+                                    <button onclick="xtLoadQuestion()" class="btn-load">确认</button>
                                 </div>
                             </div>
                         </div>
                         <h3 style="margin-top:20px;">真题示例</h3>
-                        <textarea id="xiaoti-question" placeholder="请从上方选择真题加载，或手动输入题目..."></textarea>
-                        <div class="controls">
-                            <select id="xiaoti-type">
-                                <option value="">选择题型</option>
-                                <option value="归纳概括题">归纳概括题</option>
-                                <option value="综合分析题">综合分析题</option>
-                                <option value="公文写作题">公文写作题</option>
-                            </select>
-                            <button onclick="analyzeXiaoti()">解题指导</button>
-                        </div>
+                        <textarea id="xiaoti-question" placeholder="请从上方选择真题后点击确认加载..."></textarea>
+                        <input type="hidden" id="xiaoti-type" value="">
                     </div>
                     <div class="answer-section">
                         <h3>输入你的作答</h3>
@@ -160,22 +152,13 @@
                                 </div>
                                 <div class="form-group" style="flex:0;">
                                     <label>&nbsp;</label>
-                                    <button onclick="dzLoadQuestion()" class="btn-load">选择题目</button>
+                                    <button onclick="dzLoadQuestion()" class="btn-load">确认</button>
                                 </div>
                             </div>
                         </div>
                         <h3 style="margin-top:20px;">真题示例</h3>
-                        <textarea id="dazuowen-question" placeholder="请从上方选择真题加载，或手动输入题目..."></textarea>
-                        <div class="controls">
-                            <select id="dazuowen-type">
-                                <option value="">选择主题类型</option>
-                                <option value="单主题">单主题</option>
-                                <option value="双主题AB型">双主题AB型</option>
-                                <option value="双主题ABC型">双主题ABC型</option>
-                                <option value="多主题">多主题</option>
-                            </select>
-                            <button onclick="analyzeDazuowen()">解题指导</button>
-                        </div>
+                        <textarea id="dazuowen-question" placeholder="请从上方选择真题后点击确认加载..."></textarea>
+                        <input type="hidden" id="dazuowen-type" value="">
                     </div>
                     <div class="answer-section">
                         <h3>输入你的作答</h3>
