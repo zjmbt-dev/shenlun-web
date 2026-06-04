@@ -134,18 +134,17 @@ function parseQuestions(qSection, materials) {
             if (!materialIds.includes(mid)) materialIds.push(mid);
         }
 
-        // 构建完整题目内容（材料 + 题目）
-        let fullContent = '';
+        // 构建完整题目内容（题目 + 材料）
+        let fullContent = content + '\n';
         if (materialIds.length > 0 && materials) {
             // 按顺序添加引用的材料
             materialIds.sort((a, b) => a - b);
             materialIds.forEach(mid => {
                 if (materials[mid]) {
-                    fullContent += `【给定材料 ${mid}】\n${materials[mid]}\n\n`;
+                    fullContent += `\n【材料${mid}】\n${materials[mid]}\n`;
                 }
             });
         }
-        fullContent += `【作答要求】\n${content}`;
 
         const scoreMatch = content.match(/(\d+)\s*分/);
         const score = scoreMatch ? parseInt(scoreMatch[1]) : 15;
