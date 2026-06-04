@@ -34,14 +34,21 @@ function cleanText(text) {
 // 提取给定材料部分
 function extractMaterials(text) {
     const materials = {};
-    // 匹配"材料 1："或"材料1："等格式
-    const materialRegex = /材料\s*(\d+)[：:]/g;
+    // 匹配多种格式："材料 1："、"给定资料 1"、"资料 1："
+    const materialRegex = /(?:材料|给定资料|资料)\s*(\d+)[：:\s]?/g;
     const matches = [];
     let match;
 
     while ((match = materialRegex.exec(text)) !== null) {
-        matches.push({ id: parseInt(match[1]), index: match.index });
+        const id = parseInt(match[1]);
+        // 避免重复（给定资料可能匹配两次）
+        if (!matches.find(m => m.id === id && Math.abs(m.index - match.index) < 100)) {
+            matches.push({ id, index: match.index });
+        }
     }
+
+    // 按位置排序
+    matches.sort((a, b) => a.index - b.index);
 
     // 提取每个材料的内容
     for (let i = 0; i < matches.length; i++) {
@@ -49,8 +56,8 @@ function extractMaterials(text) {
         const end = i + 1 < matches.length ? matches[i + 1].index : text.length;
         let content = text.substring(start, end);
 
-        // 去掉开头的"材料 X："
-        content = content.replace(/^材料\s*\d+[：:]\s*/, '');
+        // 去掉开头的标记
+        content = content.replace(/^(?:材料|给定资料|资料)\s*\d+[：:\s]?\s*/, '');
         // 去掉页码
         content = content.replace(/\d+\s*$/, '').trim();
 
@@ -206,7 +213,10 @@ async function main() {
             if (!pdfPath) { console.log('NO FILE'); fail++; continue; }
             const text = await extractTextWithTimeout(pdfPath);
             if (!text) { console.log('EXTRACT FAIL'); fail++; continue; }
-            const materials = extractMaterials(text);
+            // 只在作答要求之前提取材料
+            const qIdx = text.lastIndexOf('作答要求');
+            const materialText = qIdx > 0 ? text.substring(0, qIdx) : text;
+            const materials = extractMaterials(materialText);
             const qSection = extractQuestionSection(text);
             const result = parseQuestions(qSection, materials);
             if (result) {
@@ -230,7 +240,10 @@ async function main() {
             if (!fs.existsSync(pdfPath)) { console.log('NO FILE'); fail++; continue; }
             const text = await extractTextWithTimeout(pdfPath);
             if (!text) { console.log('EXTRACT FAIL'); fail++; continue; }
-            const materials = extractMaterials(text);
+            // 只在作答要求之前提取材料
+            const qIdx = text.lastIndexOf('作答要求');
+            const materialText = qIdx > 0 ? text.substring(0, qIdx) : text;
+            const materials = extractMaterials(materialText);
             const qSection = extractQuestionSection(text);
             const result = parseQuestions(qSection, materials);
             if (result) {
