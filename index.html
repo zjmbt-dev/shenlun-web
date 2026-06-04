@@ -24,6 +24,7 @@
                 <li><a href="#dazuowen">大作文训练</a></li>
                 <li><a href="#yuce">命题预判</a></li>
                 <li><a href="#scoring">评分系统</a></li>
+                <li><a href="#zhenti">真题库</a></li>
             </ul>
         </div>
     </nav>
@@ -214,6 +215,50 @@
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+            <section id="zhenti">
+            <div class="container">
+                <h2>真题库</h2>
+                <div class="zhenti-module">
+                    <div class="exam-selector">
+                        <h3>选择真题</h3>
+                        <div class="selector-group">
+                            <div class="form-group">
+                                <label>考试类型：</label>
+                                <select id="exam-category" onchange="updateExamOptions()">
+                                    <option value="">请选择考试类型</option>
+                                    <option value="国考">国考</option>
+                                    <option value="广东">广东省考</option>
+                                    <option value="江西">江西省考</option>
+                                    <option value="浙江">浙江省考</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="paper-type-group" style="display: none;">
+                                <label>卷型：</label>
+                                <select id="paper-type" onchange="updateYearOptions()">
+                                    <option value="">请选择卷型</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="year-group" style="display: none;">
+                                <label>年份：</label>
+                                <select id="exam-year" onchange="updateExamList()">
+                                    <option value="">请选择年份</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="exam-list" id="exam-list" style="display: none;">
+                        <h3>可用真题</h3>
+                        <div id="exam-items"></div>
+                    </div>
+                    <div class="exam-viewer" id="exam-viewer" style="display: none;">
+                        <h3>真题预览</h3>
+                        <div id="exam-content">
+                            <p>请选择一个真题开始练习</p>
+                        </div>
                     </div>
                 </div>
             </div>

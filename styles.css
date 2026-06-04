@@ -348,6 +348,109 @@ footer p {
     opacity: 0.8;
 }
 
+/* 真题库样式 */
+.zhenti-module {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+.exam-selector {
+    background-color: #f9f9f9;
+    padding: 25px;
+    border-radius: 8px;
+    border: 1px solid #eee;
+}
+
+.exam-selector h3 {
+    color: #667eea;
+    margin-bottom: 20px;
+    font-size: 1.2rem;
+}
+
+.selector-group {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.exam-list {
+    background-color: #f0f8ff;
+    padding: 25px;
+    border-radius: 8px;
+    border: 1px solid #d4e6f1;
+}
+
+.exam-list h3 {
+    color: #2980b9;
+    margin-bottom: 20px;
+    font-size: 1.2rem;
+}
+
+.exam-item {
+    background-color: white;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.exam-item:hover {
+    border-color: #667eea;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.exam-item h4 {
+    color: #333;
+    margin-bottom: 8px;
+    font-size: 1rem;
+}
+
+.exam-item p {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.exam-viewer {
+    grid-column: 1 / -1;
+    background-color: #fff5f5;
+    padding: 25px;
+    border-radius: 8px;
+    border: 1px solid #f5c6cb;
+}
+
+.exam-viewer h3 {
+    color: #e74c3c;
+    margin-bottom: 20px;
+    font-size: 1.2rem;
+}
+
+#exam-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+    min-height: 200px;
+}
+
+.pdf-link {
+    display: inline-block;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    text-decoration: none;
+    margin-top: 10px;
+    transition: all 0.3s ease;
+}
+
+.pdf-link:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
     header h1 {

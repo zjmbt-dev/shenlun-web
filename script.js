@@ -1,10 +1,14 @@
 // 申论备考训练系统 JavaScript
 
+// 真题数据
+let examsData = null;
+
 // 页面导航
 document.addEventListener('DOMContentLoaded', function() {
     // 初始化页面
     initNavigation();
     initForms();
+    loadExamsData();
 });
 
 // 初始化导航
@@ -659,4 +663,184 @@ function formatDate(date) {
 // 工具函数：生成随机ID
 function generateId() {
     return Math.random().toString(36).substr(2, 9);
+}
+
+// 加载真题数据
+async function loadExamsData() {
+    try {
+        const response = await fetch('exams-index.json');
+        examsData = await response.json();
+        console.log('真题数据加载成功');
+    } catch (error) {
+        console.error('加载真题数据失败:', error);
+    }
+}
+
+// 更新考试选项
+function updateExamOptions() {
+    const category = document.getElementById('exam-category').value;
+    const paperTypeGroup = document.getElementById('paper-type-group');
+    const yearGroup = document.getElementById('year-group');
+    const examList = document.getElementById('exam-list');
+    const paperTypeSelect = document.getElementById('paper-type');
+    const yearSelect = document.getElementById('exam-year');
+
+    // 重置
+    paperTypeSelect.innerHTML = '<option value="">请选择卷型</option>';
+    yearSelect.innerHTML = '<option value="">请选择年份</option>';
+    examList.style.display = 'none';
+
+    if (!category) {
+        paperTypeGroup.style.display = 'none';
+        yearGroup.style.display = 'none';
+        return;
+    }
+
+    if (category === '国考') {
+        paperTypeGroup.style.display = 'block';
+        yearGroup.style.display = 'none';
+
+        // 添加国考卷型选项
+        const paperTypes = Object.keys(examsData['国考']);
+        paperTypes.forEach(type => {
+            const option = document.createElement('option');
+            option.value = type;
+            option.textContent = type;
+            paperTypeSelect.appendChild(option);
+        });
+    } else {
+        paperTypeGroup.style.display = 'none';
+        yearGroup.style.display = 'block';
+
+        // 添加年份选项
+        const years = [...new Set(examsData[category].map(exam => exam.year))].sort((a, b) => b - a);
+        years.forEach(year => {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year + '年';
+            yearSelect.appendChild(option);
+        });
+    }
+}
+
+// 更新年份选项（国考）
+function updateYearOptions() {
+    const category = document.getElementById('exam-category').value;
+    const paperType = document.getElementById('paper-type').value;
+    const yearGroup = document.getElementById('year-group');
+    const yearSelect = document.getElementById('exam-year');
+    const examList = document.getElementById('exam-list');
+
+    yearSelect.innerHTML = '<option value="">请选择年份</option>';
+    examList.style.display = 'none';
+
+    if (!paperType) {
+        yearGroup.style.display = 'none';
+        return;
+    }
+
+    yearGroup.style.display = 'block';
+
+    // 添加年份选项
+    const years = examsData['国考'][paperType].map(exam => exam.year).sort((a, b) => b - a);
+    years.forEach(year => {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year + '年';
+        yearSelect.appendChild(option);
+    });
+}
+
+// 更新真题列表
+function updateExamList() {
+    const category = document.getElementById('exam-category').value;
+    const paperType = document.getElementById('paper-type').value;
+    const year = document.getElementById('exam-year').value;
+    const examList = document.getElementById('exam-list');
+    const examItems = document.getElementById('exam-items');
+
+    if (!year) {
+        examList.style.display = 'none';
+        return;
+    }
+
+    examList.style.display = 'block';
+    examItems.innerHTML = '';
+
+    let exams = [];
+
+    if (category === '国考') {
+        exams = examsData['国考'][paperType].filter(exam => exam.year == year);
+    } else {
+        exams = examsData[category].filter(exam => exam.year == year);
+    }
+
+    if (exams.length === 0) {
+        examItems.innerHTML = '<p>没有找到匹配的真题</p>';
+        return;
+    }
+
+    exams.forEach(exam => {
+        const examItem = document.createElement('div');
+        examItem.className = 'exam-item';
+        examItem.innerHTML = `
+            <h4>${exam.year}年${category}${category === '国考' ? paperType : ''}申论真题</h4>
+            <p>${exam.note || '完整试卷'}</p>
+            <p><strong>文件名：</strong>${exam.file}</p>
+        `;
+        examItem.onclick = () => showExamDetail(exam, category, paperType);
+        examItems.appendChild(examItem);
+    });
+}
+
+// 显示真题详情
+function showExamDetail(exam, category, paperType) {
+    const examViewer = document.getElementById('exam-viewer');
+    const examContent = document.getElementById('exam-content');
+
+    examViewer.style.display = 'block';
+
+    // 构建PDF文件路径
+    let pdfPath = '';
+
+    if (category === '国考') {
+        pdfPath = `D:/zhenti/2010-2024国考申论PDF/${exam.file}`;
+    } else if (category === '广东') {
+        pdfPath = `D:/zhenti/【05】广东公务员考试真题pdf版/广东公务员考试真题——申论03-24/${exam.file}`;
+    } else if (category === '江西') {
+        pdfPath = `D:/zhenti/【16】江西公务员考试真题pdf版/江西公务员考试真题——申论06-24PDF版/${exam.file}`;
+    } else if (category === '浙江') {
+        pdfPath = `D:/zhenti/【30】浙江公务员考试真题pdf版/浙江公务员考试真题——申论04-24【缺22】/${exam.file}`;
+    }
+
+    examContent.innerHTML = `
+        <h4>${exam.year}年${category}${category === '国考' ? paperType : ''}申论真题</h4>
+        <p><strong>考试类型：</strong>${category}${category === '国考' ? ' - ' + paperType : ''}</p>
+        <p><strong>年份：</strong>${exam.year}年</p>
+        <p><strong>说明：</strong>${exam.note || '完整试卷'}</p>
+        <p><strong>文件名：</strong>${exam.file}</p>
+        <p><strong>文件路径：</strong>${pdfPath}</p>
+        <div style="margin-top: 20px;">
+            <a href="file:///${pdfPath.replace(/\\/g, '/')}" class="pdf-link" target="_blank">打开PDF文件</a>
+            <button onclick="copyToClipboard('${pdfPath}')" style="margin-left: 10px; padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">复制路径</button>
+        </div>
+        <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+            <h5>使用说明：</h5>
+            <ol>
+                <li>点击"打开PDF文件"按钮直接打开真题PDF</li>
+                <li>或者点击"复制路径"按钮，然后在文件管理器中粘贴路径打开</li>
+                <li>打开PDF后，可以将题目内容复制到"小题训练"或"大作文训练"模块进行练习</li>
+            </ol>
+        </div>
+    `;
+}
+
+// 复制到剪贴板
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(() => {
+        showAlert('路径已复制到剪贴板', 'success');
+    }).catch(err => {
+        console.error('复制失败:', err);
+        showAlert('复制失败，请手动复制', 'danger');
+    });
 }
