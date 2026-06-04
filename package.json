@@ -1,0 +1,32 @@
+{
+  "name": "shenlun-web",
+  "version": "1.0.0",
+  "description": "申论备考训练系统 - 融合白鹭、小马哥、袁东名师方法论",
+  "main": "index.html",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "dev": "npx serve .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/shenlun-web.git"
+  },
+  "keywords": [
+    "申论",
+    "公务员考试",
+    "国考",
+    "省考",
+    "备考",
+    "训练系统",
+    "白鹭",
+    "小马哥",
+    "袁东"
+  ],
+  "author": "申论备考训练系统",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/your-username/shenlun-web/issues"
+  },
+  "homepage": "https://your-username.github.io/shenlun-web/"
+}

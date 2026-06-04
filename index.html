@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>申论备考训练系统</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>申论备考训练系统</h1>
+            <p class="subtitle">融合白鹭、小马哥、袁东名师方法论，阅卷人视角严格评判</p>
+        </div>
+    </header>
+
+    <nav>
+        <div class="container">
+            <ul>
+                <li><a href="#home" class="active">首页</a></li>
+                <li><a href="#xiaoti">小题训练</a></li>
+                <li><a href="#dazuowen">大作文训练</a></li>
+                <li><a href="#yuce">命题预判</a></li>
+                <li><a href="#scoring">评分系统</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main>
+        <section id="home" class="active">
+            <div class="container">
+                <div class="hero">
+                    <h2>申论备考，从这里开始</h2>
+                    <p>本系统融合半月谈白鹭、B站小马哥（小题）和袁东（大作文）的解题方法论，以申论命题人和阅卷人的专业视角严格评判用户作答并提供多维度评分和改进建议。</p>
+                    <div class="features">
+                        <div class="feature">
+                            <h3>真题识别</h3>
+                            <p>联网搜索 + 真题库双通道匹配，自动定位考试年份、试卷类型、题号、原题</p>
+                        </div>
+                        <div class="feature">
+                            <h3>小题训练</h3>
+                            <p>归纳概括、综合分析、公文写作三大题型，双视角参考作答</p>
+                        </div>
+                        <div class="feature">
+                            <h3>大作文训练</h3>
+                            <p>袁东"三类型"主题判断，阅卷人两轮评判</p>
+                        </div>
+                        <div class="feature">
+                            <h3>命题预判</h3>
+                            <p>基于历年真题趋势 + 当年时政热点，支持国考、省考、事业单位</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="xiaoti">
+            <div class="container">
+                <h2>小题训练模块</h2>
+                <div class="training-module">
+                    <div class="input-section">
+                        <h3>输入题目</h3>
+                        <textarea id="xiaoti-question" placeholder="请输入申论小题题目内容..."></textarea>
+                        <div class="controls">
+                            <select id="xiaoti-type">
+                                <option value="">选择题型</option>
+                                <option value="归纳概括题">归纳概括题</option>
+                                <option value="综合分析题">综合分析题</option>
+                                <option value="公文写作题">公文写作题</option>
+                            </select>
+                            <button onclick="analyzeXiaoti()">分析题目</button>
+                        </div>
+                    </div>
+                    <div class="answer-section">
+                        <h3>输入你的作答</h3>
+                        <textarea id="xiaoti-answer" placeholder="请输入你的作答内容..."></textarea>
+                        <button onclick="evaluateXiaoti()">提交批改</button>
+                    </div>
+                    <div class="result-section" id="xiaoti-result">
+                        <h3>批改结果</h3>
+                        <div id="xiaoti-feedback"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="dazuowen">
+            <div class="container">
+                <h2>大作文训练模块</h2>
+                <div class="training-module">
+                    <div class="input-section">
+                        <h3>输入题目</h3>
+                        <textarea id="dazuowen-question" placeholder="请输入大作文题目..."></textarea>
+                        <div class="controls">
+                            <select id="dazuowen-type">
+                                <option value="">选择主题类型</option>
+                                <option value="单主题">单主题</option>
+                                <option value="双主题AB型">双主题AB型</option>
+                                <option value="双主题ABC型">双主题ABC型</option>
+                                <option value="多主题">多主题</option>
+                            </select>
+                            <button onclick="analyzeDazuowen()">分析题目</button>
+                        </div>
+                    </div>
+                    <div class="answer-section">
+                        <h3>输入你的作文</h3>
+                        <textarea id="dazuowen-answer" placeholder="请输入你的作文内容..."></textarea>
+                        <button onclick="evaluateDazuowen()">提交批改</button>
+                    </div>
+                    <div class="result-section" id="dazuowen-result">
+                        <h3>批改结果</h3>
+                        <div id="dazuowen-feedback"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="yuce">
+            <div class="container">
+                <h2>命题预判模块</h2>
+                <div class="prediction-module">
+                    <div class="input-section">
+                        <h3>考试信息</h3>
+                        <div class="form-group">
+                            <label>考试类型：</label>
+                            <select id="exam-type">
+                                <option value="国考">国考</option>
+                                <option value="省考">省考</option>
+                                <option value="事业单位">事业单位</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>卷型：</label>
+                            <select id="exam-paper">
+                                <option value="副省级">副省级</option>
+                                <option value="地市级">地市级</option>
+                                <option value="行政执法">行政执法</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>年份：</label>
+                            <input type="number" id="exam-year" value="2026" min="2020" max="2030">
+                        </div>
+                        <button onclick="predictExam()">生成预判</button>
+                    </div>
+                    <div class="result-section" id="prediction-result">
+                        <h3>命题预判结果</h3>
+                        <div id="prediction-feedback"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="scoring">
+            <div class="container">
+                <h2>评分系统说明</h2>
+                <div class="scoring-info">
+                    <h3>采分点覆盖法（子项逐条核对）</h3>
+                    <div class="scoring-steps">
+                        <div class="step">
+                            <h4>Step 0：列出子项级采分点清单</h4>
+                            <p>基于完整给定材料，将每个采分点拆为可逐条核对的子项，每个子项明确分值。</p>
+                        </div>
+                        <div class="step">
+                            <h4>Step 1：逐条核对用户作答</h4>
+                            <p>对每个子项判断：踩到（≥80%，满分）、部分踩到（40-80%，一半）、未踩到（<40%，0分）。</p>
+                        </div>
+                        <div class="step">
+                            <h4>Step 2：输出结果</h4>
+                            <p>默认用精简格式，用户说"展开"/"详细"才切换详细格式。</p>
+                        </div>
+                        <div class="step">
+                            <h4>Step 3：汇总得分</h4>
+                            <p>申论踩点加分制——踩到给分，没踩到不给。不存在倒扣。</p>
+                        </div>
+                    </div>
+                    <div class="scoring-rules">
+                        <h3>评分维度（大作文）</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>维度</th>
+                                    <th>权重</th>
+                                    <th>要点</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>立意准确性</td>
+                                    <td>30%</td>
+                                    <td>精准/偏题/跑题</td>
+                                </tr>
+                                <tr>
+                                    <td>结构规范性</td>
+                                    <td>20%</td>
+                                    <td>自洽即可，"合理"比"规范"重要</td>
+                                </tr>
+                                <tr>
+                                    <td>论证充分性</td>
+                                    <td>20%</td>
+                                    <td>分析深度+双线论述+独立思考</td>
+                                </tr>
+                                <tr>
+                                    <td>素材运用</td>
+                                    <td>15%</td>
+                                    <td>案例新意+结合材料</td>
+                                </tr>
+                                <tr>
+                                    <td>语言表达</td>
+                                    <td>15%</td>
+                                    <td>简洁有力+辨识度</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>申论备考训练系统 © 2026 | 融合白鹭、小马哥、袁东名师方法论</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

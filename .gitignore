@@ -1,0 +1,74 @@
+# 依赖
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统
+.DS_Store
+Thumbs.db
+
+# 环境变量
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# 构建输出
+dist/
+build/
+
+# 日志
+logs/
+*.log
+
+# 临时文件
+tmp/
+temp/
+
+# 缓存
+.cache/
+.parcel-cache/
+
+# 测试覆盖率
+coverage/
+.nyc_output/
+
+# 依赖锁定文件
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# 运行时数据
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# 可选的 npm 缓存目录
+.npm
+
+# 可选的 eslint 缓存
+.eslintcache
+
+# 可选的 stylelint 缓存
+.stylelintcache
+
+# 微软备份文件
+*.bak
+*.tmp
+*~.nib
+
+# 项目特定
+*.docx
+*.pdf
+temp/
+backup/
