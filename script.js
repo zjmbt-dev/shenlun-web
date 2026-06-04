@@ -1,6 +1,6 @@
 // 申论备考训练系统 JavaScript
 
-// 真题索引数据（用于PDF路径）
+// 真题索引数据（来自 D:/zhenti 的实际文件）
 let examsIndex = null;
 // 真题题目数据（用于训练模块）
 let examQuestions = null;
@@ -62,115 +62,156 @@ async function loadAllData() {
     }
 }
 
+// ========== 通用工具：从 exams-index 提取某考试类型的可用年份 ==========
+
+function getAvailableYears(category) {
+    if (!examsIndex || !examsIndex[category]) return [];
+
+    const data = examsIndex[category];
+    let years = [];
+
+    if (category === '国考') {
+        // 国考结构: {副省级: [...], 地市级: [...], 行政执法: [...]}
+        Object.values(data).forEach(arr => {
+            arr.forEach(exam => years.push(exam.year));
+        });
+    } else {
+        // 省考结构: [{year, file, note}, ...]
+        data.forEach(exam => years.push(exam.year));
+    }
+
+    return [...new Set(years)].sort((a, b) => b - a);
+}
+
+// 从 examQuestions 获取某年份下所有卷型
+function getPaperTypes(category, year) {
+    if (!examQuestions || !examQuestions[category]) return [];
+    const catData = examQuestions[category];
+    const types = [];
+    Object.keys(catData).forEach(pt => {
+        if (catData[pt][year]) {
+            types.push(pt);
+        }
+    });
+    return types;
+}
+
 // ========== 小题训练：真题选择逻辑 ==========
 
-// 小题训练 - 考试类型变更
-function xtUpdatePaperType() {
-    const category = document.getElementById('xt-exam-category').value;
-    const paperGroup = document.getElementById('xt-paper-group');
-    const yearGroup = document.getElementById('xt-year-group');
-    const questionGroup = document.getElementById('xt-question-group');
-    const paperSelect = document.getElementById('xt-paper-type');
-
-    // 重置下游
-    paperSelect.innerHTML = '<option value="">请选择</option>';
-    document.getElementById('xt-exam-year').innerHTML = '<option value="">请选择</option>';
-    document.getElementById('xt-question-select').innerHTML = '<option value="">请选择</option>';
-    yearGroup.style.display = 'none';
-    questionGroup.style.display = 'none';
-
-    if (!category || !examQuestions) {
-        paperGroup.style.display = 'none';
-        return;
-    }
-
-    const data = examQuestions[category];
-    if (!data) {
-        paperGroup.style.display = 'none';
-        return;
-    }
-
-    // 判断是否有卷型（国考按卷型分组，省考也按卷型分组）
-    const paperTypes = Object.keys(data);
-    if (paperTypes.length === 1) {
-        // 只有一个卷型，跳过卷型选择，直接显示年份
-        paperGroup.style.display = 'none';
-        xtPopulateYears(category, paperTypes[0], 'xt');
-    } else {
-        paperGroup.style.display = 'block';
-        paperTypes.forEach(pt => {
-            const opt = document.createElement('option');
-            opt.value = pt;
-            opt.textContent = pt;
-            paperSelect.appendChild(opt);
-        });
-    }
-}
-
-// 小题训练 - 卷型变更
+// 考试类型变更 → 填充年份
 function xtUpdateYear() {
     const category = document.getElementById('xt-exam-category').value;
-    const paperType = document.getElementById('xt-paper-type').value;
-    if (!category || !paperType) return;
-    xtPopulateYears(category, paperType, 'xt');
+    const yearGroup = document.getElementById('xt-year-group');
+    const typeGroup = document.getElementById('xt-type-group');
+    const questionGroup = document.getElementById('xt-question-group');
+    const yearSelect = document.getElementById('xt-exam-year');
+
+    yearSelect.innerHTML = '<option value="">请选择</option>';
+    document.getElementById('xt-question-type').selectedIndex = 0;
+    document.getElementById('xt-question-select').innerHTML = '<option value="">请选择</option>';
+    typeGroup.style.display = 'none';
+    questionGroup.style.display = 'none';
+
+    if (!category) {
+        yearGroup.style.display = 'none';
+        return;
+    }
+
+    const years = getAvailableYears(category);
+    if (years.length === 0) {
+        yearGroup.style.display = 'none';
+        return;
+    }
+
+    yearGroup.style.display = 'block';
+    years.forEach(y => {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y + '年';
+        yearSelect.appendChild(opt);
+    });
 }
 
-// 小题训练 - 年份变更
+// 年份变更 → 显示题型选择
+function xtUpdateType() {
+    const year = document.getElementById('xt-exam-year').value;
+    const typeGroup = document.getElementById('xt-type-group');
+    const questionGroup = document.getElementById('xt-question-group');
+
+    document.getElementById('xt-question-type').selectedIndex = 0;
+    document.getElementById('xt-question-select').innerHTML = '<option value="">请选择</option>';
+    questionGroup.style.display = 'none';
+
+    typeGroup.style.display = year ? 'block' : 'none';
+}
+
+// 题型变更 → 填充题目列表
 function xtUpdateQuestionList() {
     if (!examQuestions) return;
+
     const category = document.getElementById('xt-exam-category').value;
-    const paperType = document.getElementById('xt-paper-type').value;
     const year = document.getElementById('xt-exam-year').value;
+    const questionType = document.getElementById('xt-question-type').value;
     const questionGroup = document.getElementById('xt-question-group');
     const questionSelect = document.getElementById('xt-question-select');
 
     questionSelect.innerHTML = '<option value="">请选择</option>';
 
-    if (!year) {
+    if (!year || !questionType) {
         questionGroup.style.display = 'none';
         return;
     }
 
-    // 获取该年份的卷型
-    const actualPaperType = paperType || Object.keys(examQuestions[category])[0];
-    const yearData = examQuestions[category]?.[actualPaperType]?.[year];
+    // 遍历该年份所有卷型，收集匹配题型的题目
+    const paperTypes = getPaperTypes(category, year);
+    const questions = [];
+    paperTypes.forEach(pt => {
+        const yearData = examQuestions[category][pt][year];
+        if (yearData && yearData.xiaoti) {
+            yearData.xiaoti.forEach(q => {
+                if (q.type === questionType) {
+                    questions.push({ ...q, paperType: pt });
+                }
+            });
+        }
+    });
 
-    if (!yearData || !yearData.xiaoti || yearData.xiaoti.length === 0) {
+    if (questions.length === 0) {
         questionGroup.style.display = 'none';
-        showAlert('该年份暂无小题数据', 'warning');
+        showAlert('该年份暂无此题型数据', 'warning');
         return;
     }
 
     questionGroup.style.display = 'flex';
-    yearData.xiaoti.forEach(q => {
+    questions.forEach(q => {
         const opt = document.createElement('option');
-        opt.value = q.id;
-        opt.textContent = `第${q.id}题 - ${q.type}（${q.score}分）`;
+        opt.value = `${q.paperType}_${q.id}`;
+        opt.textContent = `${q.paperType} 第${q.id}题（${q.score}分）`;
         questionSelect.appendChild(opt);
     });
 }
 
-// 小题训练 - 加载题目
+// 加载小题
 function xtLoadQuestion() {
     if (!examQuestions) { showAlert('数据未加载，请刷新页面重试', 'danger'); return; }
-    const category = document.getElementById('xt-exam-category').value;
-    const paperType = document.getElementById('xt-paper-type').value;
-    const year = document.getElementById('xt-exam-year').value;
-    const questionId = document.getElementById('xt-question-select').value;
 
-    if (!year || !questionId) {
-        showAlert('请先选择年份和题目', 'warning');
+    const category = document.getElementById('xt-exam-category').value;
+    const year = document.getElementById('xt-exam-year').value;
+    const questionType = document.getElementById('xt-question-type').value;
+    const selectVal = document.getElementById('xt-question-select').value;
+
+    if (!year || !questionType || !selectVal) {
+        showAlert('请先选择考试类型、时间和题目', 'warning');
         return;
     }
 
-    const actualPaperType = paperType || Object.keys(examQuestions[category])[0];
-    const yearData = examQuestions[category]?.[actualPaperType]?.[year];
+    const [paperType, qId] = selectVal.split('_');
+    const yearData = examQuestions[category]?.[paperType]?.[year];
     if (!yearData) return;
 
-    const question = yearData.xiaoti.find(q => q.id == questionId);
+    const question = yearData.xiaoti.find(q => q.id == qId);
     if (!question) return;
 
-    // 填充题目
     document.getElementById('xiaoti-question').value = question.content;
 
     // 自动选择题型
@@ -182,26 +223,34 @@ function xtLoadQuestion() {
         }
     }
 
-    showAlert(`已加载 ${year}年${category}${actualPaperType} 第${question.id}题`, 'success');
+    showAlert(`已加载 ${year}年${category}${paperType} 第${question.id}题`, 'success');
 }
 
-// 通用：填充年份下拉
-function xtPopulateYears(category, paperType, prefix) {
-    const yearGroup = document.getElementById(`${prefix}-year-group`);
-    const yearSelect = document.getElementById(`${prefix}-exam-year`);
-    const questionGroup = document.getElementById(`${prefix}-question-group`);
+// ========== 大作文训练：真题选择逻辑 ==========
+
+// 考试类型变更 → 填充年份
+function dzUpdateYear() {
+    const category = document.getElementById('dz-exam-category').value;
+    const yearGroup = document.getElementById('dz-year-group');
+    const questionGroup = document.getElementById('dz-question-group');
+    const yearSelect = document.getElementById('dz-exam-year');
 
     yearSelect.innerHTML = '<option value="">请选择</option>';
-    if (questionGroup) questionGroup.style.display = 'none';
+    document.getElementById('dz-question-select').innerHTML = '<option value="">请选择</option>';
+    questionGroup.style.display = 'none';
 
-    const data = examQuestions?.[category]?.[paperType];
-    if (!data) {
+    if (!category) {
+        yearGroup.style.display = 'none';
+        return;
+    }
+
+    const years = getAvailableYears(category);
+    if (years.length === 0) {
         yearGroup.style.display = 'none';
         return;
     }
 
     yearGroup.style.display = 'block';
-    const years = Object.keys(data).sort((a, b) => b - a);
     years.forEach(y => {
         const opt = document.createElement('option');
         opt.value = y;
@@ -210,75 +259,65 @@ function xtPopulateYears(category, paperType, prefix) {
     });
 }
 
-// ========== 大作文训练：真题选择逻辑 ==========
+// 年份变更 → 填充题目列表
+function dzUpdateQuestionList() {
+    if (!examQuestions) return;
 
-// 大作文训练 - 考试类型变更
-function dzUpdatePaperType() {
     const category = document.getElementById('dz-exam-category').value;
-    const paperGroup = document.getElementById('dz-paper-group');
-    const yearGroup = document.getElementById('dz-year-group');
-    const paperSelect = document.getElementById('dz-paper-type');
-
-    paperSelect.innerHTML = '<option value="">请选择</option>';
-    document.getElementById('dz-exam-year').innerHTML = '<option value="">请选择</option>';
-    yearGroup.style.display = 'none';
-
-    if (!category || !examQuestions) {
-        paperGroup.style.display = 'none';
-        return;
-    }
-
-    const data = examQuestions[category];
-    if (!data) {
-        paperGroup.style.display = 'none';
-        return;
-    }
-
-    const paperTypes = Object.keys(data);
-    if (paperTypes.length === 1) {
-        paperGroup.style.display = 'none';
-        dzPopulateYears(category, paperTypes[0]);
-    } else {
-        paperGroup.style.display = 'block';
-        paperTypes.forEach(pt => {
-            const opt = document.createElement('option');
-            opt.value = pt;
-            opt.textContent = pt;
-            paperSelect.appendChild(opt);
-        });
-    }
-}
-
-// 大作文训练 - 卷型变更
-function dzUpdateYear() {
-    const category = document.getElementById('dz-exam-category').value;
-    const paperType = document.getElementById('dz-paper-type').value;
-    if (!category || !paperType) return;
-    dzPopulateYears(category, paperType);
-}
-
-// 大作文训练 - 加载题目
-function dzLoadQuestion() {
-    if (!examQuestions) { showAlert('数据未加载，请刷新页面重试', 'danger'); return; }
-    const category = document.getElementById('dz-exam-category').value;
-    const paperType = document.getElementById('dz-paper-type').value;
     const year = document.getElementById('dz-exam-year').value;
+    const questionGroup = document.getElementById('dz-question-group');
+    const questionSelect = document.getElementById('dz-question-select');
+
+    questionSelect.innerHTML = '<option value="">请选择</option>';
 
     if (!year) {
-        showAlert('请先选择年份', 'warning');
+        questionGroup.style.display = 'none';
         return;
     }
 
-    const actualPaperType = paperType || Object.keys(examQuestions[category])[0];
-    const yearData = examQuestions[category]?.[actualPaperType]?.[year];
-    if (!yearData || !yearData.dazuowen) {
+    // 遍历该年份所有卷型，收集大作文题目
+    const paperTypes = getPaperTypes(category, year);
+    const essays = [];
+    paperTypes.forEach(pt => {
+        const yearData = examQuestions[category][pt][year];
+        if (yearData && yearData.dazuowen) {
+            essays.push({ ...yearData.dazuowen, paperType: pt });
+        }
+    });
+
+    if (essays.length === 0) {
+        questionGroup.style.display = 'none';
         showAlert('该年份暂无大作文数据', 'warning');
         return;
     }
 
-    const essay = yearData.dazuowen;
+    questionGroup.style.display = 'block';
+    essays.forEach(e => {
+        const opt = document.createElement('option');
+        opt.value = `${e.paperType}_${e.id}`;
+        opt.textContent = `${e.paperType} - ${e.topicType}（${e.score}分）`;
+        questionSelect.appendChild(opt);
+    });
+}
 
-    // 填充题目
+// 加载大作文
+function dzLoadQuestion() {
+    if (!examQuestions) { showAlert('数据未加载，请刷新页面重试', 'danger'); return; }
+
+    const category = document.getElementById('dz-exam-category').value;
+    const year = document.getElementById('dz-exam-year').value;
+    const selectVal = document.getElementById('dz-question-select').value;
+
+    if (!year || !selectVal) {
+        showAlert('请先选择考试类型、时间和题目', 'warning');
+        return;
+    }
+
+    const [paperType, qId] = selectVal.split('_');
+    const yearData = examQuestions[category]?.[paperType]?.[year];
+    if (!yearData || !yearData.dazuowen) return;
+
+    const essay = yearData.dazuowen;
     document.getElementById('dazuowen-question').value = essay.content;
 
     // 自动选择主题类型
@@ -290,30 +329,7 @@ function dzLoadQuestion() {
         }
     }
 
-    showAlert(`已加载 ${year}年${category}${actualPaperType} 大作文（${essay.topicType}，${essay.score}分）`, 'success');
-}
-
-// 大作文训练 - 填充年份
-function dzPopulateYears(category, paperType) {
-    const yearGroup = document.getElementById('dz-year-group');
-    const yearSelect = document.getElementById('dz-exam-year');
-
-    yearSelect.innerHTML = '<option value="">请选择</option>';
-
-    const data = examQuestions?.[category]?.[paperType];
-    if (!data) {
-        yearGroup.style.display = 'none';
-        return;
-    }
-
-    yearGroup.style.display = 'block';
-    const years = Object.keys(data).sort((a, b) => b - a);
-    years.forEach(y => {
-        const opt = document.createElement('option');
-        opt.value = y;
-        opt.textContent = y + '年';
-        yearSelect.appendChild(opt);
-    });
+    showAlert(`已加载 ${year}年${category}${paperType} 大作文（${essay.topicType}）`, 'success');
 }
 
 // ========== 小题分析功能 ==========
@@ -902,7 +918,6 @@ function predictExam() {
 
 // ========== 工具函数 ==========
 
-// HTML转义防XSS
 function escapeHTML(str) {
     const div = document.createElement('div');
     div.textContent = str;
@@ -910,7 +925,6 @@ function escapeHTML(str) {
 }
 
 function showAlert(message, type) {
-    // 移除已有提示，防止堆叠
     const existing = document.querySelectorAll('.alert');
     existing.forEach(el => el.remove());
 
