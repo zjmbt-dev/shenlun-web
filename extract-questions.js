@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const poppler = new Poppler();
-const ZHENTI_BASE = 'D:/zhenti';
+const ZHENTI_BASE = path.join(__dirname, 'zhenti');
 
 const PDF_PATHS = {
     '国考': `${ZHENTI_BASE}/2010-2024国考申论PDF`,
