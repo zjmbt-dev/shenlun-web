@@ -66,11 +66,15 @@ function parseQuestions(qSection) {
             .replace(/^[0-9]+[.、]\s*/, '')
             .replace(/^问题[一二三四五六七八九十]+\s*[:：]?\s*/, '')
             .replace(/\r\n/g, '\n')
-            .replace(/([^\n])\n([^\n])/g, '$1$2')  // Remove single line breaks within sentences
-            .replace(/\n{3,}/g, '\n\n')  // Collapse multiple empty lines
             .replace(/第\s*\d+\s*页\s*共\s*\d+\s*页/g, '')  // Remove page footers
             .replace(/关注.*?获取持续更新/g, '')  // Remove watermarks
             .replace(/\s+\d+\s*$/, '')  // Remove trailing page numbers
+            .replace(/\n{3,}/g, '\n\n')  // Collapse multiple empty lines
+            .replace(/([^\n])\n([^\n])/g, (match, p1, p2) => {
+                // Keep line breaks before "要求" or after "分）"
+                if (p2.startsWith('要') || p1.endsWith('）')) return match;
+                return p1 + p2;
+            })
             .trim();
 
         if (content.length < 20) continue;
