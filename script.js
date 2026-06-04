@@ -165,7 +165,7 @@ function xtUpdateQuestionList() {
     qs.forEach(q => {
         const opt = document.createElement('option');
         opt.value = `${q.pt}_${q.id}`;
-        opt.textContent = `第${q.id}题（${q.score}分）`;
+        opt.textContent = paperTypes.length > 1 ? `${q.pt} 第${q.id}题（${q.score}分）` : `第${q.id}题（${q.score}分）`;
         qSelect.appendChild(opt);
     });
 }
@@ -261,7 +261,7 @@ function dzUpdateQuestionList() {
     essays.forEach(e => {
         const opt = document.createElement('option');
         opt.value = `${e.pt}_${e.id}`;
-        opt.textContent = `${e.topicType}（${e.score}分）`;
+        opt.textContent = paperTypes.length > 1 ? `${e.pt} ${e.topicType}（${e.score}分）` : `${e.topicType}（${e.score}分）`;
         qSelect.appendChild(opt);
     });
 }
